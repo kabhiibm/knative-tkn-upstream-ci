@@ -13,8 +13,5 @@ curl --connect-timeout 10 --retry 5 -L https://github.com/knative-sandbox/net-co
 
 #Increase delayed-close-timeout
 sed -i 's/delayed-close-timeout: 1s/delayed-close-timeout: infinity/g' third_party/contour-latest/contour.yaml
-sed -i "/^success.*/i .\/destroy.sh $1" test/e2e-tests.sh
-sed -i "/.*dump_cluster_state().*/a\  .\/destroy.sh $1" vendor/knative.dev/hack/infra-library.sh
-kubectl get cm vcm-script -n default -o jsonpath='{.data.script}' > destroy.sh && chmod +x destroy.sh
 #Place overlay
 cp /tmp/overlay-ppc64le.yaml test/config/ytt/core/overlay-ppc64le.yaml
