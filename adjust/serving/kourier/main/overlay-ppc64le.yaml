@@ -24,10 +24,12 @@ spec:
       volumes:
       - name: registry-creds
         secret:
-          secretName: registry-creds # pragma: allowlist secret
+          secretName: registry-creds
+          #! pragma: allowlist secret
       - name: registry-certs
         secret:
-          secretName: registry-certs   # pragma: allowlist secret   
+          secretName: registry-certs
+          #! pragma: allowlist secret   
 #@overlay/match by=subset("Service", "kourier", "kourier-system"), expects=1
 ---
 spec:
