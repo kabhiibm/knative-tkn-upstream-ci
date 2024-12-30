@@ -39,12 +39,12 @@ spec:
     name: http
     protocol: TCP
     targetPort: 8080
-    nodePort: 9470
+    nodePort: 31470
   - port: 443
     name: https
     protocol: TCP
     targetPort: 8443
-    nodePort: 9475
+    nodePort: 31475
   #@overlay/replace
   type: NodePort
 
