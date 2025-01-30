@@ -1,6 +1,6 @@
 ## Architecture Overview
 
-![knative-upstream-ci Architecture](data/knative_architecture.png)
+![knative-tkn-upstream-ci Architecture](data/knative_architecture.png)
 
 1. A periodic job is triggered in the Service cluster based on the prow configuration found at https://github.com/knative/infra . 
 
@@ -32,9 +32,9 @@ As can be seen from the architectural overview chart there are quite a number of
 ### IBM internal services
 
 - IBM GitHub Enterprise _(1)_:
-  - url: <https://github.ibm.com/ppc64le-automation/knative-upstream-ci>
+  - url: <https://github.ibm.com/ppc64le-automation/knative-tkn-upstream-ci>
   - organization: ppc64le-automation
-  - repository: knative-upstream-ci
+  - repository: knative-tkn-upstream-ci
   - account access: via IBM W3 ID
 - IBM TaaS (Tools-As-A-Service) Artifactory _(3)_:
   - url: <https://na.artifactory.swg-devops.com/ui/repos/tree/General/sys-linux-power-team-ftp3distro-docker-images-docker-local>

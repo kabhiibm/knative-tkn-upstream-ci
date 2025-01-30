@@ -19,7 +19,7 @@ periodics:
     extra_refs:
       - base_ref: main
         org: ppc64le-cloud
-        repo: knative-upstream-ci
+        repo: knative-tkn-upstream-ci
         workdir: true
       - base_ref: main
         org: knative
@@ -87,8 +87,8 @@ periodics:
 
 ## Modify the adjustment scripts
 
-Refer [adjustment-scripts](https://github.com/ppc64le-cloud/knative-upstream-ci/blob/main/docs/adjustment-scripts.md) to make ppc64le specific changes for each component.
+Refer [adjustment-scripts](https://github.com/ppc64le-cloud/knative-tkn-upstream-ci/blob/main/docs/adjustment-scripts.md) to make ppc64le specific changes for each component.
 
 ## Test your changes locally
 
-Refer [test_job](https://github.com/ppc64le-cloud/knative-upstream-ci/blob/main/docs/testing.md) to test your changes locally.
+Refer [test_job](https://github.com/ppc64le-cloud/knative-tkn-upstream-ci/blob/main/docs/testing.md) to test your changes locally.

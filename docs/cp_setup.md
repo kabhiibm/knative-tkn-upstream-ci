@@ -13,8 +13,8 @@ Ensure ssh key is added onto bastion to access all nodes and ansible is installe
     Cloning the directory at any other loaction will require update in `$BASE_DIR` var in `setup-environment.sh` and in upstream test configurations in [knative/infra](https://github.com/knative/infra).
     ```bash
     cd /opt
-    git clone https://github.ibm.com/ppc64le-automation/knative-upstream-ci
-    cd knative-upstream-ci
+    git clone https://github.ibm.com/ppc64le-automation/knative-tkn-upstream-ci
+    cd knative-tkn-upstream-ci
     
     # clone k8s automation submodule
     git submodule init

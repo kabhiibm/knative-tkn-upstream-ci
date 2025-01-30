@@ -6,14 +6,21 @@ SSH_ARGS="-i /root/.ssh/ssh-key -o MACs=hmac-sha2-256 -o StrictHostKeyChecking=n
 
 # Check if the Hosts file is provided as an argument
 if [ -z "$1" ]; then
-    echo "host file not provided"
+    echo "Host file not provided"
     exit 1
 fi
 
-# exit if CI_JOB is not set
-if [ -z ${CI_JOB} ]
+# exit if KNATIVE_REPO is not set
+if [ -z ${KNATIVE_REPO} ]
 then
-    echo "Missing CI_JOB variable"
+    echo "Missing KNATIVE_REPO variable"
+    exit 1
+fi
+
+# exit if KNATIVE_RELEASE is not set
+if [ -z ${KNATIVE_RELEASE} ]
+then
+    echo "Missing KNATIVE_RELEASE variable"
     exit 1
 fi
 
@@ -54,56 +61,29 @@ install_contour(){
 
 #------------------------
 
-echo "Setting up access to k8s cluster...."
+echo "Cluster setup started for Knative"
+
 kubectl create ns knative-serving
 curl --connect-timeout 10 --retry 5 -sL https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml | sed '/.*--metric-resolution.*/a\        - --kubelet-insecure-tls' | kubectl apply -f -
 
-# TODO: merge with patching conditional code below?
-if [[ ${CI_JOB} =~ client-* ]]
+if [[ ${KNATIVE_REPO} == client ]]
 then
     create_registry_secrets_in_serving &> /dev/null
     install_contour &> /dev/null
-elif [[ ${CI_JOB} =~ operator-* ]]
+elif [[ ${KNATIVE_REPO} == operator ]]
 then
     install_contour &> /dev/null
-elif [[ ${CI_JOB} =~ contour-* || ${CI_JOB} =~ kourier-* ]]
+elif [[ ${KNATIVE_REPO} == serving ]]
 then
     create_registry_secrets_in_serving &> /dev/null
-elif [[ ${CI_JOB} =~ plugin_event-* ]]
+elif [[ ${KNATIVE_REPO} =~ kn-plugin-event ]]
 then
     create_registry_secrets_in_serving &> /dev/null
 fi
 
-echo 'Cluster setup successfully'
-echo 'Patching source code with ppc64le specific changes....'
-KNATIVE_COMPONENT=$(echo ${CI_JOB} | cut -d '-' -f1)
-RELEASE=$(echo ${CI_JOB} | cut -d '-' -f2-)
-K_BRANCH_NAME=$(echo ${CI_JOB} | rev | cut -d'-' -f1 | rev)
+echo "Cluster setup successfully"
 
-if [[ ${CI_JOB} =~ contour-* || ${CI_JOB} =~ kourier-* ]]
-then
-    cp adjust/serving/${KNATIVE_COMPONENT}/${RELEASE}/* /tmp/
-elif [[ ${CI_JOB} =~ eventing_rekt-* ]]
-then
-    cp adjust/eventing/main/* /tmp/
-elif [[ ${CI_JOB} =~ eventing_kafka-broker-* ]]
-then
-    cp adjust/eventing_kafka_broker/${K_BRANCH_NAME}/* /tmp/
-    if [[ ${K_BRANCH_NAME} = "main" ]]
-    then
-        scp ${SSH_ARGS} ${SSH_USER}@${SSH_HOST}:/root/cluster-pool/pool/k8s/kbpatch /tmp
-        kubectl create cm kb-patch -n default --from-file=/tmp/kbpatch
-    elif [[ ${K_BRANCH_NAME} = "114" ]]
-    then
-        scp ${SSH_ARGS} ${SSH_USER}@${SSH_HOST}:/root/cluster-pool/pool/k8s/kbpatch114 /tmp
-        kubectl create cm kb-patch114 -n default --from-file=/tmp/kbpatch114
-    elif [[ ${K_BRANCH_NAME} = "115" ]]
-    then
-        scp ${SSH_ARGS} ${SSH_USER}@${SSH_HOST}:/root/cluster-pool/pool/k8s/kbpatch113 /tmp
-        kubectl create cm kb-patch115 -n default --from-file=/tmp/kbpatch113
-    fi
-else
-    cp adjust/${KNATIVE_COMPONENT}/${RELEASE}/* /tmp/
-fi
+# Copy adjustment scripts 
+cp adjust/${KNATIVE_REPO}/${KNATIVE_RELEASE}/* /tmp/
 
 chmod +x /tmp/adjust.sh
