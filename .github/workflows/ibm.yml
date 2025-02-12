@@ -1,0 +1,45 @@
+name: Cleanup Unused Knative ICR Images
+
+on:
+  schedule:
+    - cron: "30 17 * * *"  # Runs daily at ~11:00 PM IST)
+
+env:
+  IBM_CLOUD_API_KEY: ${{ secrets.IBM_CLOUD_API_KEY }}
+  IBM_CLOUD_REGION: ${{ secrets.IBM_CLOUD_REGION }}
+
+jobs:
+  delete-icr-images:
+    name: Delete Unused ICR Images
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Install IBM Cloud CLI
+      run: |
+        curl -fsSL https://clis.cloud.ibm.com/install/linux | sh
+        ibmcloud --version
+        ibmcloud config --check-version=false
+        ibmcloud plugin install -f container-registry
+
+    - name: Authenticate with IBM Cloud CLI
+      run: |
+        ibmcloud login --apikey "${IBM_CLOUD_API_KEY}" -r "${IBM_CLOUD_REGION}" > /dev/null 2>&1
+        ibmcloud cr region-set global
+
+    - name: Fetch and Filter ICR Images
+      run: |
+        echo "Fetching and filtering unused Knative test images..."
+        ibmcloud cr image-digests | grep -vE "knative/contour|knative/maistra/envoy|knative/keda-webhook|knative/keda-adapter|knative/keda-main|knative/kafkacat|knative/openzipkin/zipkin|knative/bootstrap/sacura" | awk 'NR>1 && $1!="" && $2!="" {print $1 "@" $2}' > image_list
+        sed -i '1d' image_list
+        
+    - name: Delete Unused ICR Images
+      run: |
+        echo "Deleting unused images..."
+        while read -r image; do
+          echo "Deleting: $image"
+          ibmcloud cr image-rm "$image" || echo "Failed to delete $image"
+          sleep 2
+        done < image_list
