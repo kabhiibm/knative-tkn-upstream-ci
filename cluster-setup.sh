@@ -34,8 +34,8 @@ then
       --break-kubetest-on-upfail true \
       --powervs-memory 32
     
-    export KUBECONFIG="$(pwd)/knative-$TIMESTAMP/kubeconfig"
-    grep -E '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' $(pwd)/knative-$TIMESTAMP/hosts > HOSTS_IP
+    export KUBECONFIG="$(pwd)/$CLUSTER_NAME/kubeconfig"
+    grep -E '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' $(pwd)/$CLUSTER_NAME/hosts > HOSTS_IP
     source setup-environment.sh HOSTS_IP
 
 elif [[ "$1" == "delete" ]]
