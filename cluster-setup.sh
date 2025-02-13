@@ -6,7 +6,13 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-TIMESTAMP=$(date +%s)
+# Check if cluster name is provided as an argument
+if [ -z "$2" ]; then
+    echo "cluster name input not set."
+    exit 1
+fi
+
+CLUSTER_NAME=$2
 K8S_BUILD_VERSION=$(curl https://storage.googleapis.com/k8s-release-dev/ci/latest.txt)
 REGION=syd
 ZONE="syd05"
@@ -21,7 +27,7 @@ then
       --powervs-ssh-key knative-ssh-key \
       --ssh-private-key ~/.ssh/ssh-key \
       --build-version $K8S_BUILD_VERSION \
-      --cluster-name knative-$TIMESTAMP \
+      --cluster-name $CLUSTER_NAME \
       --workers-count 2 \
       --playbook install-k8s-kn-tkn.yml \
       --up --auto-approve --retry-on-tf-failure 5 \
@@ -35,9 +41,9 @@ then
 elif [[ "$1" == "delete" ]]
 then
     echo "Resources deletion started "
-    kubetest2 tf --powervs-region syd --powervs-zone $ZONE \
+    kubetest2 tf --powervs-region $REGION --powervs-zone $ZONE \
       --powervs-service-id $SERVICE_ID \
       --ignore-cluster-dir true \
-      --cluster-name knative-$TIMESTAMP \
+      --cluster-name $CLUSTER_NAME \
       --down --auto-approve --ignore-destroy-errors
 fi
