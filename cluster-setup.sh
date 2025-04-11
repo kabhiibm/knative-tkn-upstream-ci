@@ -14,7 +14,9 @@ then
       --powervs-service-id af3e8574-29ea-41a2-a9c5-e88cba5c5858 \
       --powervs-ssh-key knative-ssh-key \
       --ssh-private-key ~/.ssh/ssh-key \
+      --directory release \
       --build-version $K8S_BUILD_VERSION \
+      --release-marker release/$K8S_BUILD_VERSION \
       --cluster-name knative-$TIMESTAMP \
       --workers-count 2 \
       --playbook install-k8s-kn-tkn.yml \
