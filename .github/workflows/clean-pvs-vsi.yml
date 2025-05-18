@@ -1,0 +1,73 @@
+name: Cleanup Unused Knative ICR Images
+
+on:
+  schedule:
+    - cron: "45 17 * * *"  # Runs daily at ~11:15 PM IST)
+
+env:
+  PCLOUD_IBM_API_KEY: ${{ secrets.PCLOUD_IBM_API_KEY }}
+  PCLOUD_IBM_REGION: au-syd
+
+jobs:
+  delete-pvs-subnet:
+    name: Delete danggling PVS and subnets
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Install IBM Cloud CLI
+      run: |
+        curl -fsSL https://clis.cloud.ibm.com/install/linux | sh
+        ibmcloud --version
+        ibmcloud config --check-version=false
+
+    - name: Authenticate with IBM Cloud CLI
+      run: |
+        ibmcloud login --apikey "${PCLOUD_IBM_API_KEY}" -r "${PCLOUD_IBM_REGION}" > /dev/null 2>&1
+
+    - name: Delete PVS and subnets
+      run: |
+        echo "Fetching CRN of workspace 'rdr-knative-prow-testbed-syd05'"
+        crn=$(ibmcloud pi workspace list --json | jq  '.[] | .workspaces[] | select(.name == "rdr-knative-prow-testbed-syd05") | "\(.details.crn)"' | tr -d '"')
+
+        echo "Initialise a dictionary for storing instance data and subnets"
+        declare -A instance_dict
+        declare -A subnet_dict
+
+        echo "set the target workspace"
+        if [ ! -z $crn ]; then
+            ibmcloud pi workspace target $crn > /dev/null 2>&1
+            echo "Fetching instances........."
+            ibmcloud pi instance list
+            instances=$(ibmcloud pi instance list --json | jq -r '.pvmInstances[] | "\(.id) \(.name) \(.status) \(.health.status)"')
+            instance_dict["$crn"]="$instances"
+
+            echo "Fetching subnets........."
+            ibmcloud pi snet ls
+            subnets=$(ibmcloud pi snet ls --json | jq -r '.networks[] | "\(.networkID) \(.name) \(.href)"')
+            subnet_dict["$crn"]="$subnets"
+        fi
+
+        for crn in ${!instance_dict[@]};
+        do
+           while read -r id name status health_status;
+           do
+              echo "Deleting instance: $id $name........."
+        	    if ! ibmcloud pi instance delete $id --delete-data-volumes=True; then
+        		    echo "Failed to delete instance: $id $name"
+              fi  
+           done < <(echo "${instance_dict[$crn]}")
+        done
+        
+        for crn in ${!subnet_dict[@]};
+        do
+           while read -r networkID name href;
+           do
+              echo "Deleting network: $networkID $name........."
+        	    if ! ibmcloud pi snet delete $networkID; then
+        		    echo "Failed to delete instance: $id $name"
+              fi  
+           done < <(echo "${subnet_dict[$crn]}")
+        done
