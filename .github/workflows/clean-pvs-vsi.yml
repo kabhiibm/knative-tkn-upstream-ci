@@ -2,7 +2,7 @@ name: Cleanup Unused Knative ICR Images
 
 on:
   schedule:
-    - cron: "45 17 * * *"  # Runs daily at ~11:15 PM IST)
+    - cron: "35 17 * * *"  # Runs daily at ~11:15 PM IST)
 
 env:
   PCLOUD_IBM_API_KEY: ${{ secrets.PCLOUD_IBM_API_KEY }}
