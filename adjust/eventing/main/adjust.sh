@@ -9,6 +9,9 @@ echo "Increase e2e timeout to 60m"
 sed -i "s/\(go_test_e2e.*\)timeout=1h\(.*\).*/\1timeout=15m\2/g" test/e2e-tests.sh
 sed -i "s/\(go_test_e2e.*\)parallel=20\(.*\).*/\1parallel=1\2/g" test/e2e-tests.sh
 
+ko build --platform=linux/ppc64le ./vendor/knative.dev/reconciler-test/cmd/eventshub
+ko build --platform=linux/ppc64le ./cmd/heartbeats
+
 echo "Use ppc64le supported zipkin image"
 sed -i "s|image:.*|image: icr.io/upstream-k8s-registry/knative/openzipkin/zipkin:test|g" test/config/monitoring/monitoring.yaml
 echo "Source code patched successfully"
