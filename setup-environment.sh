@@ -42,15 +42,15 @@ create_registry_secrets_in_serving(){
 
 install_contour(){
     # TODO: remove yq dependency
-    wget https://github.com/mikefarah/yq/releases/download/v4.25.3/yq_linux_amd64 -P /tmp
-    chmod +x /tmp/yq_linux_amd64
+    wget https://github.com/mikefarah/yq/releases/download/v4.25.3/yq_linux_$(arch) -P /tmp
+    chmod +x /tmp/yq_linux_$(arch)
     ISTIO_RELEASE=knative-v1.13.1
     echo "Contour is being installed..."
     local envoy_replacement="icr.io/upstream-k8s-registry/knative/maistra/envoy:v2.4"
     local contour_replacement="icr.io/upstream-k8s-registry/knative/contour:v1.29.1"
     # install istio-crds
     curl --connect-timeout 10 --retry 5 -sL https://github.com/knative-sandbox/net-istio/releases/download/${ISTIO_RELEASE}/istio.yaml | \
-    /tmp/yq_linux_amd64 '. | select(.kind == "CustomResourceDefinition"), select(.kind == "Namespace")' | kubectl apply -f -
+	    /tmp/yq_linux_$(arch) '. | select(.kind == "CustomResourceDefinition"), select(.kind == "Namespace")' | kubectl apply -f -
     # install contour
     curl --connect-timeout 10 --retry 5 -sL https://raw.githubusercontent.com/knative/serving/main/third_party/contour-latest/contour.yaml | \
     sed 's!\(image: \).*docker.io.*!\1'$envoy_replacement'!g' | sed 's!\(image: \).*ghcr.io.*!\1'$contour_replacement'!g' | kubectl apply -f -

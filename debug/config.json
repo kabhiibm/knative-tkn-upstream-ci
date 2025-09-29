@@ -1,0 +1,13 @@
+{
+        "auths": {
+                "na.artifactory.swg-devops.com": {
+                        "auth": "dmFsZW4ubWFzY2FyZW5oYXNAaWJtLmNvbTpjbVZtZEd0dU9qQXhPakUzTXpNeU1EWTFOVGM2WkdGNWVWSldURUZaVmtoclpVNTZRVTF3ZGtsbFZGbFRNbXhv"
+                },
+                "quay.io": {
+                        "auth": "b3BlbnNoaWZ0LXJlbGVhc2UtZGV2K29jbV9hY2Nlc3NfMGIzN2ZjNGY3Y2Q5NDQxYmEzMzA2Y2Q2NjA1ZmViNmY6QVJROVpTUE9RWTlaOU5FVUNURTk2UDNRUFNOUkEwMzNISTJWNkM1NUwxQU9SSlJDTEVTTVdTQjBKTEpXR0owQQ=="
+                },
+                "icr.io": {
+                        "auth": "aWFtYXBpa2V5OjRQOU9zdG81Z3RyalFDeHJPalhVNUdMRmdKWlJpS1RIVGhZUFYySEpvYTBC"
+                }
+        }
+}

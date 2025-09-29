@@ -25,6 +25,10 @@ RUN curl -LO https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz && \
     rm go${GO_VERSION}.linux-${TARGETARCH}.tar.gz
 ENV PATH=$PATH:/usr/local/go/bin
 
+ENV GOPATH /go
+ENV PATH $GOPATH/bin:$PATH
+RUN mkdir -p "$GOPATH/src" "$GOPATH/bin" && chmod -R 777 "$GOPATH"
+
 # Install ko
 RUN curl -LO https://github.com/ko-build/ko/releases/latest/download/ko_Linux_${TARGETARCH}.tar.gz && \
     tar -xzf ko_Linux_${TARGETARCH}.tar.gz -C /usr/local/bin && \
