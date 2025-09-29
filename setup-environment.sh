@@ -2,12 +2,15 @@
 
 # This script sets up the k8s environment and updates the knative source for running the tests succesfully.
 
+if [ -z ${DEBUG} ]
+then
 SSH_ARGS="-i /root/.ssh/ssh-key -o MACs=hmac-sha2-256 -o StrictHostKeyChecking=no -o LogLevel=ERROR -o UserKnownHostsFile=/dev/null"
 
 # Check if the Hosts file is provided as an argument
 if [ -z "$1" ]; then
     echo "Host file not provided"
     exit 1
+fi
 fi
 
 # exit if KNATIVE_REPO is not set
@@ -24,6 +27,8 @@ then
     exit 1
 fi
 
+if [ -z ${DEBUG} ]
+then
 while IFS= read -r line; do
     # Copy the config file to the remote server
     scp ${SSH_ARGS} /root/.docker/config.json root@${line}:/var/lib/kubelet/config.json
@@ -34,6 +39,7 @@ while IFS= read -r line; do
         continue
     }
 done < "$1"
+fi
 
 create_registry_secrets_in_serving(){
     kubectl -n knative-serving create secret generic registry-creds --from-file=config.json=/root/.docker/config.json

@@ -3,6 +3,7 @@
 import subprocess
 import os
 import signal
+import yaml
 
 import argparse
 import os
@@ -43,16 +44,40 @@ clone_path = "$GOPATH/src/github.com/$KNATIVE_ORG/$KNATIVE_REPO"
 container_name = "dev-container"
 #image_name = "quay.io/powercloud/knative-prow-tests:latest"
 image_name = "quay.io/p_serverless/knative-prow-tests:debug"
-mount_dir = os.path.abspath("./")
+mount_dir = os.path.abspath("./..")
 kind_cluster_name = "mkpod"
 kubeconfig_dir = os.path.expanduser("~/.kube")
 
 def run_cmd(cmd, check=True, capture_output=False):
     print(f"Running: {' '.join(cmd)}")
     return subprocess.run(cmd, check=check, capture_output=capture_output, text=True)
-
+'''
 def create_kind_cluster():
     run_cmd(["kind", "create", "cluster", "--image", f"{kind_image}:{k8s_version}", "--name", kind_cluster_name])
+'''
+def create_kind_cluster():
+    # Define the config    
+    kind_config = {
+        "kind": "Cluster",
+        "apiVersion": "kind.x-k8s.io/v1alpha4",
+        "nodes": [
+            {
+                "role": "control-plane",
+                "extraMounts": [
+                    {
+                        "hostPath": f"{mount_dir}/debug/config.json",
+                        "containerPath": "/var/lib/kubelet/config.json"
+                    }
+                ]
+            }
+        ]
+    }
+
+    # Save to YAML
+    with open("kind-config.yaml", "w") as f:
+        yaml.dump(kind_config, f)
+
+    run_cmd(["kind", "create", "cluster", "--image", f"{kind_image}:{k8s_version}", "--config", "kind-config.yaml", "--name", kind_cluster_name])
 
 def delete_kind_cluster():
     run_cmd(["kind", "delete", "cluster", "--name", kind_cluster_name])
@@ -62,14 +87,15 @@ def start_container():
     run_cmd([
         runtime, "run", "-it", "--rm",
         "--name", container_name,
-        "--volume", f"{mount_dir}:/mnt/shared",
+        "--volume", f"{mount_dir}:/mnt",
         "--network", "host",  # Allows access to Kind cluster
         "--volume", f"{kubeconfig_dir}:/root/.kube",
         "--env", "KUBECONFIG=/root/.kube/config",
         "--volume", f"{mount_dir}/config.json:/root/.docker/config.json",
         image_name,
         "/bin/bash", "-c",
-        "source /mnt/shared/.env && "
+        "source /mnt/debug/.env && "
+        "source /mnt/setup-environment.sh &&"
         "env && "
         f"mkdir -p {clone_path} && "
         f"git clone {repo_url} {clone_path} && "
