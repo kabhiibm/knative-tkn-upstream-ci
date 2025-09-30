@@ -6,12 +6,41 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
+    vim \
     curl \
     wget \
     git \
     bash \
     unzip \
     gnupg \
+    ansible \
+    build-essential \
+    file \
+    gcc \
+    make \
+    mercurial \
+    pkg-config \
+    rsync \
+    xz-utils \
+    zlib1g-dev \
+    gcc \
+    python3-dev \
+    python3-pip \
+    apt-transport-https \
+    lsb-release \
+    openssh-client \
+    ca-certificates \
+    software-properties-common \
+    bison \
+    uuid-runtime \
+    shellcheck \
+    zip \
+    jq \
+    procps \
+    net-tools \
+    gnuplot \
+    bsdextrautils \
+    gettext-base \
     ca-certificates \
     apt-transport-https \
     software-properties-common \
@@ -19,7 +48,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Go
-ARG GO_VERSION=1.25.1
+ARG GO_VERSION=1.24.7
 RUN curl -LO https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz && \
     tar -C /usr/local -xzf go${GO_VERSION}.linux-${TARGETARCH}.tar.gz && \
     rm go${GO_VERSION}.linux-${TARGETARCH}.tar.gz
@@ -55,6 +84,34 @@ RUN if [ "$TARGETARCH" != "ppc64le" ] && [ "$TARGETARCH" != "s390x" ]; then \
 # Install yq
 RUN curl -L https://github.com/mikefarah/yq/releases/download/v4.25.3/yq_linux_$TARGETARCH -o /usr/bin/yq && \
     chmod +x /usr/bin/yq
+
+# Extra tools through go install
+# These run using the golang image version of Go, not any defined by `gvm`
+ARG KAIL_VERSION=v0.17.4
+ARG GOTESTSUM_VERSION=v1.11.0
+ARG PROTOC_GEN_GO_VERSION=v1.28.0
+ARG GO_LICENSES_VERSION=v1.6.0
+ARG JSONNET_VERSION=v0.18.0
+ARG COSIGN_VERSION=v1.13.6
+ARG TOOLBOX_VERSION=cdf9cf656d1402c5c8ca558ef7f7b7ef2ff9093b
+
+# Disable CGO libs to avoid error with too old version in base image
+ENV CGO_ENABLED=0
+# Disable Go' toolchain operation, and stick to the version installed
+ENV GOTOOLCHAIN=local
+
+RUN go install rsc.io/goversion@v1.2.0
+
+RUN go install github.com/boz/kail/cmd/kail@${KAIL_VERSION}
+RUN go install gotest.tools/gotestsum@${GOTESTSUM_VERSION}
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@${PROTOC_GEN_GO_VERSION}
+RUN go install github.com/google/go-licenses@${GO_LICENSES_VERSION}
+RUN go install github.com/google/go-jsonnet/cmd/jsonnet@${JSONNET_VERSION}
+RUN go install github.com/sigstore/cosign/cmd/cosign@${COSIGN_VERSION}
+RUN go install knative.dev/toolbox/provenance-generator@${TOOLBOX_VERSION}
+RUN go install knative.dev/toolbox/flaky-test-reporter@${TOOLBOX_VERSION}
+RUN go install knative.dev/toolbox/pkg/clustermanager/perf-tests@${TOOLBOX_VERSION}
+RUN go install knative.dev/toolbox/kntest/cmd/kntest@${TOOLBOX_VERSION}
 
 # Final image
 FROM base AS final

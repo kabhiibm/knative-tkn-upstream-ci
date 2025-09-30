@@ -100,7 +100,7 @@ def start_container():
         "--network", "host",  # Allows access to Kind cluster
         "--volume", f"{kubeconfig_dir}:/root/.kube",
         "--env", "KUBECONFIG=/root/.kube/config",
-        "--volume", f"{mount_dir}/config.json:/root/.docker/config.json",
+        "--volume", f"{mount_dir}/debug/config.json:/root/.docker/config.json",
         image_name,
         "/bin/bash", "-c",
         "source /mnt/debug/.env && "
@@ -112,6 +112,7 @@ def start_container():
         f"git clone {repo_url} {clone_path} && "
         f"cd {clone_path} && "
         "git checkout $KNATIVE_RELEASE && "
+        ". /tmp/adjust.sh &&"
         f"exec bash"
     ])
 
