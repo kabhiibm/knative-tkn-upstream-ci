@@ -74,13 +74,22 @@ def create_kind_cluster():
     }
 
     # Save to YAML
-    with open("kind-config.yaml", "w") as f:
+    with open(f"{mount_dir}/debug/kind-config.yaml", "w") as f:
         yaml.dump(kind_config, f)
 
-    run_cmd(["kind", "create", "cluster", "--image", f"{kind_image}:{k8s_version}", "--config", "kind-config.yaml", "--name", kind_cluster_name])
+    run_cmd(["kind", "create", "cluster", "--image", f"{kind_image}:{k8s_version}", "--config", f"{mount_dir}/debug/kind-config.yaml", "--name", kind_cluster_name])
 
 def delete_kind_cluster():
     run_cmd(["kind", "delete", "cluster", "--name", kind_cluster_name])
+    try:
+        file_path = f"{mount_dir}/debug/kind-config.yaml"
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            print(f"File '{file_path}' has been deleted successfully.")
+        else:
+            print(f"File '{file_path}' does not exist.")
+    except Exception as e:
+        print(f"An error occurred while deleting the file: {e}")
 
 def start_container():
     runtime = "docker" if use_docker else "podman"
@@ -95,7 +104,9 @@ def start_container():
         image_name,
         "/bin/bash", "-c",
         "source /mnt/debug/.env && "
+        "pushd /mnt &&"
         "source /mnt/setup-environment.sh &&"
+        "popd &&"
         "env && "
         f"mkdir -p {clone_path} && "
         f"git clone {repo_url} {clone_path} && "
