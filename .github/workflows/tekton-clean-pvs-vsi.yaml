@@ -1,4 +1,4 @@
-name: Cleanup unused Knative PVS and subnets
+name: Cleanup unused Tekton PVS and subnets
 
 on:
   schedule:
