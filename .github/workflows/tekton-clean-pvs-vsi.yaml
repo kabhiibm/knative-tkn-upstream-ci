@@ -2,7 +2,7 @@ name: Cleanup unused Knative PVS and subnets
 
 on:
   schedule:
-    - cron: "35 18 * * *"  # Runs daily at ~11:05 PM IST)
+    - cron: "35 18 * * *"  # Runs daily at ~12:05 AM IST)
   workflow_dispatch:
 
 env:
