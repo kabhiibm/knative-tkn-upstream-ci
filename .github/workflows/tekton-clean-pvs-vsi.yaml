@@ -57,9 +57,9 @@ jobs:
             while read -r id name;
             do
               echo "Deleting PVS instance: $id $name........."
-                #if ! ibmcloud pi instance delete $id --delete-data-volumes=True; then
-                #echo "Failed to delete instance: $id $name"
-                #fi  
+              if ! ibmcloud pi instance delete $id --delete-data-volumes=True; then
+                echo "Failed to delete instance: $id $name"
+              fi  
             done < $input_file
           fi
 
@@ -78,8 +78,8 @@ jobs:
             while read -r networkID name;
             do
               echo "Deleting network: $networkID $name........."
-                #if ! ibmcloud pi snet delete $networkID; then
-                #echo "Failed to delete instance: $id $name"
-                #fi  
+              if ! ibmcloud pi snet delete $networkID; then
+                echo "Failed to delete instance: $id $name"
+              fi  
             done < $input_file
           fi
