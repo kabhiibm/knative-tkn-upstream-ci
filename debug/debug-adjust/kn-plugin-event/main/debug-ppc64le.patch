@@ -1,0 +1,24 @@
+diff --git a/test/e2e-tests.sh b/test/e2e-tests.sh
+index 33ab5cd5..d05611a6 100755
+--- a/test/e2e-tests.sh
++++ b/test/e2e-tests.sh
+@@ -3,7 +3,9 @@
+ set -Eeo pipefail
+ 
+ # shellcheck disable=SC1090
+-source "$(go run knative.dev/hack/cmd/script e2e-tests.sh)"
++SOURCED_FILES=$(go run knative.dev/hack/cmd/script e2e-tests.sh --verbose)
++sed -i '/E2E_PROJECT_ID="$(gcloud config get-value project)"/d' $SOURCED_FILES
++source $SOURCED_FILES
+ 
+ function start_latest_knative_serving() {
+   local KNATIVE_NET_KOURIER_RELEASE
+@@ -26,7 +28,7 @@ function knative_setup() {
+ initialize "$@"
+ 
+ set -Eeuo pipefail
+-
++export CGO_ENABLED=1
+ ./mage publish
+ 
+ go_test_e2e -timeout 10m ./test/... || fail_test 'kn-event e2e tests'

@@ -1,0 +1,13 @@
+diff --git a/test/e2e-tests.sh b/test/e2e-tests.sh
+index 44f6da35b..42eec9903 100755
+--- a/test/e2e-tests.sh
++++ b/test/e2e-tests.sh
+@@ -21,7 +21,7 @@ wait_until_pods_running knative-eventing || fail_test "Pods in knative-eventing
+ export_logs_continuously
+ 
+ header "Running tests"
+-
++export CGO_ENABLED=1
+ if [ "${EVENTING_KAFKA_BROKER_CHANNEL_AUTH_SCENARIO:-""}" != "" ]; then
+   # if this flag exists, only test Kafka channel scenarios with auth
+   $(dirname "$0")/channel-e2e-tests.sh || fail_test "Failed to execute KafkaChannel tests"
