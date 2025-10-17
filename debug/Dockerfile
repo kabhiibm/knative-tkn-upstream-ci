@@ -1,5 +1,7 @@
 # syntax=docker/dockerfile:1.4
+# docker buildx build --platform linux/ppc64le -t quay.io/p_serverless/knative-prow-tests:debug   --load -f Dockerfile .
 FROM --platform=$BUILDPLATFORM ubuntu:22.04 AS base
+#FROM --platform=$BUILDPLATFORM ppc64le/debian:13 As base
 
 ARG TARGETARCH
 ENV DEBIAN_FRONTEND=noninteractive
@@ -87,6 +89,7 @@ RUN curl -L https://github.com/mikefarah/yq/releases/download/v4.25.3/yq_linux_$
 
 # Extra tools through go install
 # These run using the golang image version of Go, not any defined by `gvm`
+ARG KO_VERSION=v0.15.2
 ARG KAIL_VERSION=v0.17.4
 ARG GOTESTSUM_VERSION=v1.11.0
 ARG PROTOC_GEN_GO_VERSION=v1.28.0
@@ -98,10 +101,11 @@ ARG TOOLBOX_VERSION=cdf9cf656d1402c5c8ca558ef7f7b7ef2ff9093b
 # Disable CGO libs to avoid error with too old version in base image
 ENV CGO_ENABLED=0
 # Disable Go' toolchain operation, and stick to the version installed
-ENV GOTOOLCHAIN=local
+ENV GOTOOLCHAIN=auto
 
 RUN go install rsc.io/goversion@v1.2.0
 
+RUN go install github.com/google/ko@${KO_VERSION}
 RUN go install github.com/boz/kail/cmd/kail@${KAIL_VERSION}
 RUN go install gotest.tools/gotestsum@${GOTESTSUM_VERSION}
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@${PROTOC_GEN_GO_VERSION}
@@ -112,6 +116,36 @@ RUN go install knative.dev/toolbox/provenance-generator@${TOOLBOX_VERSION}
 RUN go install knative.dev/toolbox/flaky-test-reporter@${TOOLBOX_VERSION}
 RUN go install knative.dev/toolbox/pkg/clustermanager/perf-tests@${TOOLBOX_VERSION}
 RUN go install knative.dev/toolbox/kntest/cmd/kntest@${TOOLBOX_VERSION}
+
+#
+# BEGIN: JAVA SETUP (This is for eventing-kafka-broker and kn-func)
+#
+ARG JAVA_VERSION=21
+ARG MAVEN_VERSION=3.8.4
+
+RUN curl -fsSL https://packages.adoptium.net/artifactory/api/gpg/key/public | gpg --dearmor -o /usr/share/keyrings/adoptium.gpg && \
+    echo \
+    "deb [signed-by=/usr/share/keyrings/adoptium.gpg] https://packages.adoptium.net/artifactory/deb $(lsb_release -cs) main" \
+    | tee /etc/apt/sources.list.d/adoptium.list
+RUN apt-get update -qqy && \
+    apt-get install -qqy temurin-${JAVA_VERSION}-jdk && \
+    rm -rf /var/lib/apt/lists/*
+ENV JAVA_HOME=/usr/lib/jvm/temurin-${JAVA_VERSION}-jdk-${TARGETARCH}
+
+#ENV MAVEN_HOME=/usr/local/maven
+#ENV M2_HOME=$MAVEN_HOME
+#ENV PATH=${M2_HOME}/bin:${PATH}
+
+#RUN curl -fsSL https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz -o /tmp/apache-maven-${MAVEN_VERSION}-bin.tar.gz && \
+#    tar xf /tmp/apache-maven-${MAVEN_VERSION}-bin.tar.gz -C /tmp && \
+#    mv /tmp/apache-maven-${MAVEN_VERSION} $MAVEN_HOME
+
+#RUN java -version && \
+#    mvn -v
+
+#
+# END: JAVA SETUP
+#
 
 # Final image
 FROM base AS final

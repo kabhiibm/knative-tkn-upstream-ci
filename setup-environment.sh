@@ -93,3 +93,9 @@ echo "Cluster setup successfully"
 cp adjust/${KNATIVE_REPO}/${KNATIVE_RELEASE}/* /tmp/
 
 chmod +x /tmp/adjust.sh
+
+if [ ! -z ${DEBUG} ]
+then
+    cp debug/debug-adjust/${KNATIVE_REPO}/${KNATIVE_RELEASE}/* /tmp/
+    chmod +x /tmp/debug-adjust.sh
+fi

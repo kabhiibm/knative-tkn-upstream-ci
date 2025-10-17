@@ -101,8 +101,12 @@ def start_container():
         "--volume", f"{kubeconfig_dir}:/root/.kube",
         "--env", "KUBECONFIG=/root/.kube/config",
         "--volume", f"{mount_dir}/debug/config.json:/root/.docker/config.json",
+        "--cap-add", "SYS_PTRACE",
+        "--security-opt", "seccomp=unconfined",
         image_name,
         "/bin/bash", "-c",
+        # Disable ASLR only inside the container
+        "sysctl -w kernel.randomize_va_space=0 && "
         "source /mnt/debug/.env && "
         "pushd /mnt &&"
         "source /mnt/setup-environment.sh &&"
@@ -113,6 +117,7 @@ def start_container():
         f"cd {clone_path} && "
         "git checkout $KNATIVE_RELEASE && "
         ". /tmp/adjust.sh &&"
+        ". /tmp/debug-adjust.sh &&"
         f"exec bash"
     ])
 
