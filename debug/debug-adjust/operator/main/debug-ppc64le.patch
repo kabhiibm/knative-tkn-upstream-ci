@@ -23,3 +23,4 @@ index 331511cc4..4be5d7011 100644
 +  #E2E_PROJECT_ID="$(gcloud config get-value project)"
    export E2E_PROJECT_ID
    readonly E2E_PROJECT_ID
+ 

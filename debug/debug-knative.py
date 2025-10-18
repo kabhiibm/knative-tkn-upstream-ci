@@ -116,8 +116,8 @@ def start_container():
         f"git clone {repo_url} {clone_path} && "
         f"cd {clone_path} && "
         "git checkout $KNATIVE_RELEASE && "
-        ". /tmp/adjust.sh &&"
-        ". /tmp/debug-adjust.sh &&"
+        ". /tmp/debug-adjust.sh && "
+        ". /tmp/adjust.sh && "
         f"exec bash"
     ])
 

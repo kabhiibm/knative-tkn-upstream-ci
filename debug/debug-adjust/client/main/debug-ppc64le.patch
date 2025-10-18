@@ -25,3 +25,4 @@ index a12b94c2..070a54dc 100755
 +  export CGO_ENABLED=1
    go_test_e2e -timeout=45m ./test/e2e || fail_test
  }
+ 

@@ -130,18 +130,20 @@ RUN curl -fsSL https://packages.adoptium.net/artifactory/api/gpg/key/public | gp
 RUN apt-get update -qqy && \
     apt-get install -qqy temurin-${JAVA_VERSION}-jdk && \
     rm -rf /var/lib/apt/lists/*
-ENV JAVA_HOME=/usr/lib/jvm/temurin-${JAVA_VERSION}-jdk-${TARGETARCH}
 
-#ENV MAVEN_HOME=/usr/local/maven
-#ENV M2_HOME=$MAVEN_HOME
-#ENV PATH=${M2_HOME}/bin:${PATH}
+# TODO: add options for multi-arch build
+ENV JAVA_HOME=/usr/lib/jvm/temurin-${JAVA_VERSION}-jdk-ppc64el
 
-#RUN curl -fsSL https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz -o /tmp/apache-maven-${MAVEN_VERSION}-bin.tar.gz && \
-#    tar xf /tmp/apache-maven-${MAVEN_VERSION}-bin.tar.gz -C /tmp && \
-#    mv /tmp/apache-maven-${MAVEN_VERSION} $MAVEN_HOME
+ENV MAVEN_HOME=/usr/local/maven
+ENV M2_HOME=$MAVEN_HOME
+ENV PATH=${M2_HOME}/bin:${PATH}
 
-#RUN java -version && \
-#    mvn -v
+RUN curl -fsSL https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz -o /tmp/apache-maven-${MAVEN_VERSION}-bin.tar.gz && \
+    tar xf /tmp/apache-maven-${MAVEN_VERSION}-bin.tar.gz -C /tmp && \
+    mv /tmp/apache-maven-${MAVEN_VERSION} $MAVEN_HOME
+
+RUN java -version && \
+    mvn -v
 
 #
 # END: JAVA SETUP
