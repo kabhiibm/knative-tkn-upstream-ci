@@ -2,7 +2,7 @@
 
 # This script sets up the k8s environment and updates the knative source for running the tests succesfully.
 
-if [ -z ${DEBUG} ]
+if [[ ${DEBUG} == false ]]
 then
 SSH_ARGS="-i /root/.ssh/ssh-key -o MACs=hmac-sha2-256 -o StrictHostKeyChecking=no -o LogLevel=ERROR -o UserKnownHostsFile=/dev/null"
 
@@ -27,7 +27,7 @@ then
     exit 1
 fi
 
-if [ -z ${DEBUG} ]
+if [[ ${DEBUG} == false ]]
 then
 while IFS= read -r line; do
     # Copy the config file to the remote server
@@ -94,7 +94,7 @@ cp adjust/${KNATIVE_REPO}/${KNATIVE_RELEASE}/* /tmp/
 
 chmod +x /tmp/adjust.sh
 
-if [ ! -z ${DEBUG} ]
+if [[ ${DEBUG} == true ]]
 then
     cp debug/debug-adjust/${KNATIVE_REPO}/${KNATIVE_RELEASE}/* /tmp/
     chmod +x /tmp/debug-adjust.sh
