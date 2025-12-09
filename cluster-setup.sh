@@ -7,9 +7,9 @@ if [ -z "$1" ]; then
 fi
 
 DEBUG=false
-PVS_REGION='syd'
-PVS_ZONE='syd04'
-PVS_SVC_ID='e04ebc6a-3b99-4b0f-9dcc-f6352033f44b'
+PVS_REGION='eu-gb'
+PVS_ZONE='lon06'
+PVS_SVC_ID='15df767e-d4fe-4089-bae9-227c29e5650c'
 
 if [[ "$1" == "create" ]]
 then
