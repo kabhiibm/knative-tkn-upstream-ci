@@ -8,7 +8,6 @@ setup_env() {
     # ----------------------------
     # Configuration variables
     # ----------------------------
-    #export PCLOUD_IBM_API_KEY="${PCLOUD_IBM_API_KEY:-_MQOnelXp7fXMmGyeV8Kq7awFi3xeWanW8tVqEqaOgVL}"
     export PCLOUD_IBM_API_KEY=${TF_VAR_powervs_api_key} # Environment variable of pod
     export PCLOUD_IBM_REGION="${PCLOUD_IBM_REGION:-eu-gb}"
     export IMAGE_NAME="${IMAGE_NAME:-centos9-stream}"
@@ -126,7 +125,8 @@ create_kind_cluster() {
     # Install Docker & Kind inside VSI
     # ----------------------------
     echo "Installing Docker and Kind on VSI..."
-    ssh -o StrictHostKeyChecking=no -i "$SSH_PRIVATE_KEY" root@"$VSI_IP" <<EOF
+    DOCKER_CONFIG=$(cat /root/.docker/config.json) \
+    ssh -o StrictHostKeyChecking=no -i "$SSH_PRIVATE_KEY" root@"$VSI_IP" <<'EOF'
     set -e
 
     # Install Docker
@@ -182,7 +182,7 @@ create_kind_cluster() {
     echo ${DOCKER_CONFIG} > /root/config.json
 
     # Create kind-config.yaml
-    cat <<YAML > /root/kind-config.yaml
+    cat <<'YAML' > /root/kind-config.yaml
     apiVersion: kind.x-k8s.io/v1alpha4
     kind: Cluster
     nodes:
