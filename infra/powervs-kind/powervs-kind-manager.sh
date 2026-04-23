@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 # -------------------------------
 # Display usage information
@@ -24,12 +24,10 @@ setup_env() {
     # ----------------------------
     # Configuration variables
     # ----------------------------
-    export PCLOUD_IBM_API_KEY=${TF_VAR_powervs_api_key} # Environment variable of pod
+    export PCLOUD_IBM_API_KEY=${TF_VAR_powervs_api_key} # Environment variable coming from prow
     export PCLOUD_IBM_REGION="${PCLOUD_IBM_REGION:-eu-gb}"
     export IMAGE_NAME="${IMAGE_NAME:-centos9-stream}"
     export SSH_PRIVATE_KEY="${SSH_PRIVATE_KEY:-~/.ssh/ssh-key}"
-    export TIMESTAMP=$(date +%s)
-    #export VSI_NAME="knative-test-${TIMESTAMP}"
     export VSI_NAME="${VSI_NAME:-knative-testing}"
     export NETWORK_NAME="${VSI_NAME}-pub-net"
     export SUBNET_ID="${SUBNET_ID:-}"
@@ -46,7 +44,7 @@ setup_env() {
 # -------------------------------
 reset_env() {
     unset PCLOUD_IBM_API_KEY PCLOUD_IBM_REGION IMAGE_NAME SSH_PRIVATE_KEY
-    unset TIMESTAMP VSI_NAME NETWORK_NAME SUBNET_ID VSI_IP VSI_ID
+    unset VSI_NAME NETWORK_NAME SUBNET_ID VSI_IP VSI_ID
     unset DOCKER_CONFIG POLL_INTERVAL K8S_BUILD_VERSION
     echo "Environment variables reset."
 }
@@ -91,6 +89,79 @@ create_network() {
 }
 
 # ----------------------------
+# Wait for VSI to become ACTIVE
+# ----------------------------
+wait_for_vsi_active() {
+    local rc
+    local provision_start_time
+
+    echo "Waiting for VSI to be provisioned..."
+
+    provision_start_time=$(date +%s)
+    timeout 900 bash -c '
+      while true; do
+        elapsed=$(( $(date +%s) - '"$provision_start_time"' ))
+        status=$(
+          ibmcloud pi instance get "$VSI_ID" --json 2>/dev/null \
+            | jq -r ".status" 2>/dev/null \
+            | tr -d "[:space:]" \
+            | tr "[:lower:]" "[:upper:]"
+        )
+
+        if [[ "$status" == "ACTIVE" ]]; then
+          VSI_IP=$(ibmcloud pi instance get "$VSI_ID" --json | jq -r ".networks[0].externalIP" | tr -d "[:space:]")
+          echo "✅ Instance $VSI_NAME ($VSI_IP) is ACTIVE [$elapsed sec elapsed]"
+          break
+        fi
+
+        echo "$VSI_NAME: Still creating... [$elapsed sec elapsed] Current status: ${status:-UNKNOWN}"
+        sleep '"$POLL_INTERVAL"'
+      done
+    '
+    rc=$?
+
+    if [[ $rc -ne 0 ]]; then
+      echo "⚠️ Command failed while waiting for $VSI_NAME to become ACTIVE. Exit code: $rc"
+      exit "$rc"
+    fi
+}
+
+# ----------------------------
+# Wait for VSI health to become OK
+# ----------------------------
+wait_for_vsi_healthy() {
+    local rc
+    local health_start_time
+
+    health_start_time=$(date +%s)
+    timeout 900 bash -c '
+      while true; do
+        elapsed=$(( $(date +%s) - '"$health_start_time"' ))
+        health=$(
+          ibmcloud pi instance get "$VSI_ID" --json 2>/dev/null \
+            | jq -r ".health.status" 2>/dev/null \
+            | tr -d "[:space:]" \
+            | tr "[:lower:]" "[:upper:]"
+        )
+
+        if [[ "$health" == "OK" ]]; then
+          echo "✅ Instance $VSI_NAME is healthy [$elapsed sec elapsed]"
+          break
+        fi
+
+        echo "$VSI_NAME: health check pending... [$elapsed sec elapsed] Current health: ${health:-UNKNOWN}"
+        sleep '"$POLL_INTERVAL"'
+      done
+    '
+    rc=$?
+
+    if [[ $rc -ne 0 ]]; then
+      echo "❌ Instance $VSI_NAME is not healthy. Exiting..."
+      exit "$rc"
+    fi
+}
+
+# ----------------------------
 # Create VSI
 # ----------------------------
 create_vsi() {
@@ -118,66 +189,12 @@ create_vsi() {
     fi
     echo "VSI_ID: $VSI_ID"
 
-    # ----------------------------
-    # Wait for VSI
-    # ----------------------------
-    echo "Waiting for VSI to be provisioned..."
-    
-    timeout 900 bash -c '
-      while true; do
-        status=$(
-          ibmcloud pi instance get "$VSI_ID" --json 2>/dev/null \
-            | jq -r '.status' 2>/dev/null \
-            | tr -d '[:space:]' \
-            | tr '[:lower:]' '[:upper:]'
-        )
-    
-        if [[ "$status" == "ACTIVE" ]]; then
-          VSI_IP=$(ibmcloud pi instance get $VSI_ID --json | jq -r '.networks[0].externalIP' | tr -d '[:space:]') # Get VSI external IP and remove hidden characters
-          echo "✅ Instance $VSI_NAME ($VSI_IP) is ACTIVE"
-          break
-        fi
-        echo "$VSI_NAME ($VSI_IP) is $status"
-        sleep '"$POLL_INTERVAL"'
-      done
-    '
-    rc=$?
-    
-    if [[ $rc -eq 0 ]]; then
-      timeout 900 bash -c '
-        while true; do
-          health=$(
-            ibmcloud pi instance get "$VSI_ID" --json 2>/dev/null \
-              | jq -r '.health.status' 2>/dev/null \
-              | tr -d '[:space:]' \
-              | tr '[:lower:]' '[:upper:]'
-          )
+    wait_for_vsi_active
+    wait_for_vsi_healthy
 
-          if [[ "$health" == "OK" ]]; then
-            echo "✅ Instance $VSI_NAME is healthy"
-            break
-          fi
-          echo "$VSI_NAME is not healthy yet..."
-          sleep '"$POLL_INTERVAL"'
-        done
-      '
-      rc=$?
-
-      if [[ $rc -ne 0 ]]; then
-        echo "❌ Instance $VSI_NAME is not healthy. Exiting..."
-        exit $rc
-      fi
-
-      VSI_IP=$(ibmcloud pi instance get "$VSI_ID" --json | jq -r '.networks[0].externalIP' | tr -d '[:space:]')
-      export VSI_IP
-      echo "Done. VSI_IP: $VSI_IP"
-    #elif [[ $rc -eq 124 ]]; then
-    #  echo "⛔ Timed out after 600s waiting for ACTIVE."
-    #  exit 124
-    else
-      echo "⚠️ Command failed with exit code $rc."
-      exit "$rc"
-    fi
+    VSI_IP=$(ibmcloud pi instance get "$VSI_ID" --json | jq -r '.networks[0].externalIP' | tr -d '[:space:]')
+    export VSI_IP
+    echo "Done. VSI_IP: $VSI_IP"
 }
 
 # ----------------------------
@@ -187,7 +204,6 @@ create_kind_cluster() {
     # ----------------------------
     # Test SSH
     # ----------------------------
-    #chmod 600 "${SSH_PRIVATE_KEY}"
 
     ssh -o StrictHostKeyChecking=no -i "${SSH_PRIVATE_KEY}" root@"$VSI_IP" "echo 'SSH OK'"
 
@@ -200,7 +216,7 @@ create_kind_cluster() {
     scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i "$SSH_PRIVATE_KEY" "$DOCKER_CONFIG" root@"$VSI_IP":/root/config.json
 
     echo "Step 2. Patch KinD build script with VSI_IP: $VSI_IP and K8S_BUILD_VERSION: $K8S_BUILD_VERSION"
-    sed -e "s/\${VSI_IP}/${VSI_IP}/g" -e "s/\${K8S_BUILD_VERSION}/${K8S_BUILD_VERSION}/g" build-kind.sh > build-kind-patched.sh
+    sed -e "s/\${VSI_IP}/${VSI_IP}/g" -e "s/\${K8S_BUILD_VERSION}/${K8S_BUILD_VERSION}/g" "$(dirname "${BASH_SOURCE[0]}")/build-kind.sh" > build-kind-patched.sh
 
     echo "Step 3. Add execute permission to patched script"
     chmod +x build-kind-patched.sh
@@ -277,6 +293,9 @@ delete_cluster() {
 # Main function to handle command execution
 # -------------------------------
 main() {
+    # Uncomment reset_env call while running multiple times only while debugging
+    #reset_env
+    
     # Check if argument is provided
     if [[ $# -eq 0 ]]; then
         echo "❌ Error: No command provided"
@@ -290,7 +309,6 @@ main() {
         create)
             echo "🚀 Starting cluster creation..."
             trap delete_cluster ERR EXIT
-            reset_env
             setup_env
             install_prereqs
             login_ibmcloud
@@ -302,7 +320,6 @@ main() {
             ;;
         delete)
             echo "🗑️  Starting cluster deletion..."
-            reset_env
             setup_env
             login_ibmcloud
             delete_cluster

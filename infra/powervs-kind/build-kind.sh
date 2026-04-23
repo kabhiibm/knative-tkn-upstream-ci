@@ -1,6 +1,6 @@
 #!/bin/bash
 ################################################################################
-# build-kind.sh - KinD Cluster Setup for PowerPC (ppc64le)
+# build-kind.sh - KinD Cluster Setup for Power (ppc64le)
 ################################################################################
 # Automates installation of Docker, KinD, and kubectl, then creates a 
 # multi-node Kubernetes cluster using PowerCloud KinD images.
